@@ -1,5 +1,19 @@
 module TeTetris.Core
 
+// -- Utils --
+
+module Seq = 
+  let repeat items = 
+    seq { while true do yield! items }
+
+let (|SeqEmpty|SeqCons|) (xs: 'a seq) = //'
+  if Seq.isEmpty xs then SeqEmpty
+  else SeqCons(Seq.head xs, Seq.skip 1 xs)
+
+let deattachHead = function
+    | SeqCons (x, xs) -> x, xs
+// -- --
+
 let WorldWidth = 10
 let WorldHeight = 22
 
@@ -18,7 +32,7 @@ type Tetramino = {
 }
 
 type State = {
-    tetraminoQueue: TetraminoShape list
+    tetraminoQueue: TetraminoShape seq
     activeTetramino: Tetramino
     blocks: Block list
 }
@@ -50,7 +64,7 @@ let initTetramino = function
             ]
         }
 
-let emptyState (x::xs) = { tetraminoQueue=xs; activeTetramino=initTetramino x; blocks=[{x=0;y=0}] }
+let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=[{x=0;y=0}] }
 
 let moveTetramino t =
     let moveBlock bl = { bl with y = bl.y-1 }
@@ -63,16 +77,27 @@ let allPairs xs ys =
         yield (x, y)
     ]
 
-let isTetraminoSet t bls =
+let isTetraminoConflict t bls =
     let isSetOnAnotherBlock t bls = 
         allPairs t.coords bls
         |> List.exists (fun (b1, b2) -> b1.x = b2.x && b1.y = b2.y)
-    let isSetOnTheGround t = t.coords |> List.exists (fun b -> b.y = 0)
+    let isSetOnTheGround t = t.coords |> List.exists (fun b -> b.y < 0)
 
     isSetOnTheGround t || isSetOnAnotherBlock t bls
 
+
 let gameTick state =
+
+    let processTeraminoSet state =
+        let (newActiveTetramino, tQueue) = deattachHead state.tetraminoQueue
+        { state with 
+            activeTetramino = initTetramino newActiveTetramino
+            tetraminoQueue = tQueue
+            blocks = state.activeTetramino.coords |> List.append state.blocks
+        }
+
+
     let movedTetramino = moveTetramino state.activeTetramino
-    if isTetraminoSet movedTetramino state.blocks
-        then { state with activeTetramino = movedTetramino }
+    if isTetraminoConflict movedTetramino state.blocks
+        then processTeraminoSet state
         else { state with activeTetramino = movedTetramino }

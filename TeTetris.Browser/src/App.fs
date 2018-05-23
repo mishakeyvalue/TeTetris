@@ -21,7 +21,7 @@ type Msg =
 
 // UPDATE
 let init _ = NotStarted, []
-let RefreshRate = 1024
+let RefreshRate = 512 / 2
 
 let mutable interval = 0.
 
