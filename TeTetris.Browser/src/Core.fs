@@ -65,10 +65,11 @@ let initTetramino = function
         }
 
 let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=[{x=0;y=0}] }
-
-let moveTetramino t =
-    let moveBlock bl = { bl with y = bl.y-1 }
-    { t with coords = t.coords |> List.map  moveBlock }
+let moveBlock xo yo bl = { bl with x = bl.x+xo;y = bl.y+yo }
+let moveTetramino xo yo t =
+    
+    { t with coords = t.coords |> List.map (moveBlock xo yo) }
+    
 
 
 let allPairs xs ys = 
@@ -85,19 +86,50 @@ let isTetraminoConflict t bls =
 
     isSetOnTheGround t || isSetOnAnotherBlock t bls
 
+let destroyFullRows bs =
+    let rows = bs |>  List.groupBy (fun b -> b.y)
+    let resultRows = rows |> List.filter (fun (_, bs') -> bs'.Length < WorldWidth)          
+    let destroyedOffset = rows.Length - resultRows.Length
+    resultRows |> List.collect (fun (_, bs) -> bs) |> List.map (moveBlock 0 -destroyedOffset)
 
 let gameTick state =
 
     let processTeraminoSet state =
         let (newActiveTetramino, tQueue) = deattachHead state.tetraminoQueue
+        let newBlocks = 
+            state.activeTetramino.coords 
+            |> List.append state.blocks
+
         { state with 
             activeTetramino = initTetramino newActiveTetramino
             tetraminoQueue = tQueue
-            blocks = state.activeTetramino.coords |> List.append state.blocks
+            blocks = newBlocks
         }
+    
+    let tetraminoTick = moveTetramino 0 -1 
 
-
-    let movedTetramino = moveTetramino state.activeTetramino
+    let checkedState = { state with blocks = destroyFullRows state.blocks}
+    let movedTetramino = tetraminoTick state.activeTetramino
     if isTetraminoConflict movedTetramino state.blocks
-        then processTeraminoSet state
+        then processTeraminoSet checkedState
+        else { checkedState with activeTetramino = movedTetramino }
+
+type GameCommand = 
+    | Tick
+    | MoveRight
+    | MoveLeft
+    | ShiftDown
+
+let move xo yo state =
+    let movedTetramino = moveTetramino xo yo state.activeTetramino
+    if isTetraminoConflict movedTetramino state.blocks 
+        || movedTetramino.coords |> List.exists (fun b -> b.x < 0 || b.x >= WorldWidth)
+        then state
         else { state with activeTetramino = movedTetramino }
+
+let commandHandler command state =
+    match command with
+        | Tick -> gameTick state
+        | MoveLeft  -> move (-1) 0 state
+        | MoveRight -> move (+1) 0 state
+        | ShiftDown -> move 0 (-1) state

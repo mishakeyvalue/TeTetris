@@ -18,22 +18,48 @@ open Fable.PowerPack.Keyboard
 type Msg =
     | StartGame
     | Tick
+    | LeftKeyPressed
+    | RightKeyPressed
+    | DownKeyPressed
 
-// UPDATE
-let init _ = NotStarted, []
+// *****************************************************
 let RefreshRate = 512 / 2
 
 let mutable interval = 0.
 
 let tick dispatch =
     interval <- window.setInterval((fun _ -> 
-        window.console.log "Hello, motherfucker "
         dispatch Tick), RefreshRate)
 
 let stop _ =
     window.clearInterval (interval)
 
 
+///// key bindings
+
+let [<Literal>] LEFT_KEY = 37.
+let [<Literal>] UP_KEY = 38.
+let [<Literal>] RIGHT_KEY = 39.
+let [<Literal>] DOWN_KEY = 40.
+
+
+let onGameKeyDown _ = 
+    let sub dispatch =
+        (fun (e : Fable.Import.Browser.KeyboardEvent) ->
+            match e with
+                | ev when ev.keyCode = LEFT_KEY -> dispatch (LeftKeyPressed)
+                | ev when ev.keyCode = RIGHT_KEY -> dispatch (RightKeyPressed)
+                | ev when ev.keyCode = DOWN_KEY -> dispatch (DownKeyPressed)
+                | _ -> ()
+            :> obj)
+        |> window.addEventListener_keydown
+    Cmd.ofSub sub
+// *****************************************************
+
+
+
+// UPDATE
+let init _ = NotStarted, []
 let tetraminos = 
     [
         Palka
@@ -47,7 +73,18 @@ let update msg model =
     match msg with
         | StartGame -> InProgress initialState, Cmd.ofSub tick
         | Tick -> match model with
-            | InProgress state -> InProgress (gameTick state), []
+            | InProgress state -> InProgress (commandHandler GameCommand.Tick state), []
+            | _  -> model, []
+
+        | LeftKeyPressed -> match model with
+            | InProgress state -> InProgress (commandHandler GameCommand.MoveLeft state), []
+            | _  -> model, []
+
+         | RightKeyPressed -> match model with
+            | InProgress state -> InProgress (commandHandler GameCommand.MoveRight state), []
+            | _  -> model, []
+         | DownKeyPressed -> match model with
+            | InProgress state -> InProgress (commandHandler GameCommand.ShiftDown state), []
             | _  -> model, []
 
         | _ -> model, []
@@ -145,12 +182,19 @@ let root model dispatch =
             [ ClassName "container" ]
             game ] ]
 
+
+
+
+
+
+
 open Elmish.React
 open Elmish.Debug
 open Elmish.HMR
 
 // App
 Program.mkProgram init update root
+|> Program.withSubscription onGameKeyDown
 #if DEBUG
 |> Program.withDebugger
 |> Program.withHMR
