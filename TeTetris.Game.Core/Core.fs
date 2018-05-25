@@ -1,46 +1,11 @@
-module TeTetris.Core
+module TeTetris.Game.Core
 
-// -- Utils --
-
-module Seq = 
-  let repeat items = 
-    seq { while true do yield! items }
-
-let (|SeqEmpty|SeqCons|) (xs: 'a seq) = //'
-  if Seq.isEmpty xs then SeqEmpty
-  else SeqCons(Seq.head xs, Seq.skip 1 xs)
-
-let deattachHead = function
-    | SeqCons (x, xs) -> x, xs
-// -- --
+open TeTetris.Utils
+open TeTetris.Game.Types
 
 let WorldWidth = 10
 let WorldHeight = 22
 
-type Block = {
-    x: int
-    y: int
-}
-
-type TetraminoShape =
-    | Cube
-    | Palka
-
-type Tetramino = {
-    shape: TetraminoShape
-    coords: Block list
-}
-
-type State = {
-    tetraminoQueue: TetraminoShape seq
-    activeTetramino: Tetramino
-    blocks: Block list
-}
-
-type Game =
-    | NotStarted
-    | InProgress of State
-    | End
 let startPoint = {x=WorldWidth-5;y=WorldHeight-5}
 
 let initTetramino = function
@@ -70,8 +35,6 @@ let moveTetramino xo yo t =
     
     { t with coords = t.coords |> List.map (moveBlock xo yo) }
     
-
-
 let allPairs xs ys = 
     [ for x in xs do
       for y in ys do
@@ -113,12 +76,6 @@ let gameTick state =
     if isTetraminoConflict movedTetramino state.blocks
         then processTeraminoSet checkedState
         else { checkedState with activeTetramino = movedTetramino }
-
-type GameCommand = 
-    | Tick
-    | MoveRight
-    | MoveLeft
-    | ShiftDown
 
 let move xo yo state =
     let movedTetramino = moveTetramino xo yo state.activeTetramino

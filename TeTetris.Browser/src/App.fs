@@ -10,7 +10,8 @@ open Fable.Import.Browser
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 
-open TeTetris.Core
+open TeTetris.Game.Core
+open TeTetris.Game.Types
 open Fable.PowerPack.Keyboard
 
 // MODEL
