@@ -1,23 +1,34 @@
 ﻿module TeTetris.Game.Types
 
-type Block = {
+type Point = {
     x: int
     y: int
+}
+type Block = {
+    color: string
 }
 
 type TetraminoShape =
     | Cube
     | Palka
 
+type TetraminoCoords = {
+    a: Point
+    b: Point
+    c: Point
+    d: Point
+}
+
 type Tetramino = {
     shape: TetraminoShape
-    coords: Block list
+    block: Block
+    coords: TetraminoCoords
 }
 
 type State = {
     tetraminoQueue: TetraminoShape seq
     activeTetramino: Tetramino
-    blocks: Block list
+    blocks: Map<int, Map<int, Block option>>
 }
 
 type Game =

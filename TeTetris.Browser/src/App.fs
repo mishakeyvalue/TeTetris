@@ -99,14 +99,13 @@ let height n = attr "height" n
 let fill c = attr "fill" c
 let stroke c = attr "stroke" c
 let strokeWidth n = attr "strokeWidth" n
-let point color p =
-  printfn "%A" p
+let point (p,bl) =
   rect
      [width Scale
       height Scale
       X ((p.x) * Scale)
       Y ((WorldHeight - p.y - 1) * Scale)
-      fill color
+      fill bl.color
       stroke "white"
      ]
      []
@@ -130,6 +129,9 @@ let root model dispatch =
   
   let widthSize = WorldWidth * Scale
   let heightSize = WorldHeight * Scale
+
+  let toList t = [t.a; t.b; t.c; t.d;]
+
   let game = 
         [svg 
         [width widthSize
@@ -148,13 +150,18 @@ let root model dispatch =
           ]
           @
          (match model with
-            | InProgress s -> s.activeTetramino.coords |> List.map (point "green")
+            | InProgress s -> s.activeTetramino.coords |> toList |> List.map (fun x -> x, {color="green"}) |> List.map (point)
             | _            -> []
          )
           
           @
           (match model with
-            | InProgress s -> s.blocks |> List.map (point "black")
+            | InProgress s ->
+                s.blocks
+                |> Map.toList
+                |> List.collect (fun (k,v) -> v |> Map.toList |> List.map (fun (k',v') -> {x=k; y=k'}, v'))
+                |> List.choose (function | (_, None) -> None | (v, Some x) -> Some (v, x))
+                |> List.map point // TODO: move convertion to VM to utils
             | _            -> []
           )
         );

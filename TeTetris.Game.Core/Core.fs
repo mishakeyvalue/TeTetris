@@ -3,90 +3,80 @@ module TeTetris.Game.Core
 open TeTetris.Utils
 open TeTetris.Game.Types
 
+// Predefined
+
 let WorldWidth = 10
 let WorldHeight = 22
 
-let startPoint = {x=WorldWidth-5;y=WorldHeight-5}
+let startPoint = { x=WorldWidth-5; y=WorldHeight }
 
 let initTetramino = function
     | Cube ->
         { shape=Cube;
+          block={color="green"}
           coords=
-            [ startPoint
-              { startPoint with x = startPoint.x+1 }
-              { startPoint with y = startPoint.y+1 }
-              { startPoint with y = startPoint.y+1; x = startPoint.x + 1 }
-            ]
+          {
+            a=startPoint;
+            b={ startPoint with x = startPoint.x+1 };
+            c={ startPoint with y = startPoint.y+1 };
+            d={ startPoint with y = startPoint.y+1; x = startPoint.x + 1 };
+          }
         }
         
     | Palka ->
         { shape=Palka;
+          block={color="green"};
           coords=
-            [ startPoint
-              { startPoint with y = startPoint.y+1 }
-              { startPoint with y = startPoint.y+2 }
-              { startPoint with y = startPoint.y+3 }
-            ]
+          {
+            a=startPoint;
+            b={ startPoint with y = startPoint.y+1 };
+            c={ startPoint with y = startPoint.y+2 };
+            d={ startPoint with y = startPoint.y+3 };               
+          }       
         }
 
-let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=[{x=0;y=0}] }
-let moveBlock xo yo bl = { bl with x = bl.x+xo;y = bl.y+yo }
-let moveTetramino xo yo t =
-    
-    { t with coords = t.coords |> List.map (moveBlock xo yo) }
-    
-let allPairs xs ys = 
-    [ for x in xs do
-      for y in ys do
-        yield (x, y)
-    ]
+let emptyGrid = [for i in 0 .. WorldWidth do
+                   yield  i, [for j in 0 .. WorldHeight + 4 do yield j, None] |> Map.ofList 
+                ] |> Map.ofList
 
-let isTetraminoConflict t bls =
-    let isSetOnAnotherBlock t bls = 
-        allPairs t.coords bls
-        |> List.exists (fun (b1, b2) -> b1.x = b2.x && b1.y = b2.y)
-    let isSetOnTheGround t = t.coords |> List.exists (fun b -> b.y < 0)
+let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=emptyGrid }
 
-    isSetOnTheGround t || isSetOnAnotherBlock t bls
+// Game logic
 
-let destroyFullRows bs =
-    let rows = bs |>  List.groupBy (fun b -> b.y)
-    let resultRows = rows |> List.filter (fun (_, bs') -> bs'.Length < WorldWidth)          
-    let destroyedOffset = rows.Length - resultRows.Length
-    resultRows |> List.collect (fun (_, bs) -> bs) |> List.map (moveBlock 0 -destroyedOffset)
+let moveTetramino (t: TetraminoCoords) = 
+    let movePoint p = {p with y = p.y-1}
+    {t with 
+        a = movePoint t.a
+        b = movePoint t.b
+        c = movePoint t.c
+        d = movePoint t.d
+    }
 
-let gameTick state =
+let isLandConflict (t: TetraminoCoords) (landed: Map<int, Map<int, Block option>>) = 
+    let isPointConflict p = p.y < 0 || landed.[p.x].[p.y] |> Option.isSome
+    isPointConflict t.a || isPointConflict t.b || isPointConflict t.c || isPointConflict t.d
 
-    let processTeraminoSet state =
-        let (newActiveTetramino, tQueue) = deattachHead state.tetraminoQueue
-        let newBlocks = 
-            state.activeTetramino.coords 
-            |> List.append state.blocks
 
-        { state with 
-            activeTetramino = initTetramino newActiveTetramino
-            tetraminoQueue = tQueue
-            blocks = newBlocks
-        }
-    
-    let tetraminoTick = moveTetramino 0 -1 
+let landTetramino state = 
+     let addPoint p (blocks: Map<int, Map<int, Block option>>) = blocks.Add(p.x, (blocks.[p.x].Add( p.y, { color="black" } |> Some)))     
+     let t = state.activeTetramino.coords
+     let landedBlocks = state.blocks |> addPoint t.a |> addPoint t.b |> addPoint t.c |> addPoint t.d
 
-    let checkedState = { state with blocks = destroyFullRows state.blocks}
-    let movedTetramino = tetraminoTick state.activeTetramino
-    if isTetraminoConflict movedTetramino state.blocks
-        then processTeraminoSet checkedState
-        else { checkedState with activeTetramino = movedTetramino }
+     { state with 
+         activeTetramino = state.tetraminoQueue |> Seq.head |> initTetramino
+         blocks = landedBlocks
+     }
 
-let move xo yo state =
-    let movedTetramino = moveTetramino xo yo state.activeTetramino
-    if isTetraminoConflict movedTetramino state.blocks 
-        || movedTetramino.coords |> List.exists (fun b -> b.x < 0 || b.x >= WorldWidth)
-        then state
-        else { state with activeTetramino = movedTetramino }
+let gameTick (state: State)=
+    let potentialTetraminoPos = moveTetramino state.activeTetramino.coords
+    if isLandConflict potentialTetraminoPos state.blocks
+        then landTetramino state
+        else {state with activeTetramino = {state.activeTetramino with coords = potentialTetraminoPos }}
 
-let commandHandler command state =
+let commandHandler command state =    
     match command with
         | Tick -> gameTick state
-        | MoveLeft  -> move (-1) 0 state
-        | MoveRight -> move (+1) 0 state
-        | ShiftDown -> move 0 (-1) state
+        | _ -> state
+    //    | MoveLeft  -> move (-1) 0 state
+    //    | MoveRight -> move (+1) 0 state
+    //    | ShiftDown -> move 0 (-1) state
