@@ -43,8 +43,8 @@ let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTe
 
 // Game logic
 
-let moveTetramino (t: TetraminoCoords) = 
-    let movePoint p = {p with y = p.y-1}
+let moveTetramino xo yo (t: TetraminoCoords) = 
+    let movePoint p = {p with x = p.x + xo; y = p.y + yo}
     {t with 
         a = movePoint t.a
         b = movePoint t.b
@@ -53,7 +53,7 @@ let moveTetramino (t: TetraminoCoords) =
     }
 
 let isLandConflict (t: TetraminoCoords) (landed: Map<int, Map<int, Block option>>) = 
-    let isPointConflict p = p.y < 0 || landed.[p.x].[p.y] |> Option.isSome
+    let isPointConflict p = p.x < 0 || p.x >= WorldWidth || p.y < 0 || landed.[p.x].[p.y] |> Option.isSome
     isPointConflict t.a || isPointConflict t.b || isPointConflict t.c || isPointConflict t.d
 
 
@@ -68,15 +68,22 @@ let landTetramino state =
      }
 
 let gameTick (state: State)=
-    let potentialTetraminoPos = moveTetramino state.activeTetramino.coords
+    let potentialTetraminoPos = moveTetramino 0 (-1) state.activeTetramino.coords
     if isLandConflict potentialTetraminoPos state.blocks
         then landTetramino state
         else {state with activeTetramino = {state.activeTetramino with coords = potentialTetraminoPos }}
 
+let move x y state = 
+    let potentialPos = moveTetramino x y state.activeTetramino.coords
+    if isLandConflict potentialPos state.blocks
+        then state
+        else {state with activeTetramino = {state.activeTetramino with coords = potentialPos }}
+
 let commandHandler command state =    
     match command with
         | Tick -> gameTick state
+        | MoveLeft  -> move (-1) 0 state
+        | MoveRight -> move (+1) 0 state
+        | ShiftDown -> move 0 (-1) state        
         | _ -> state
-    //    | MoveLeft  -> move (-1) 0 state
-    //    | MoveRight -> move (+1) 0 state
-    //    | ShiftDown -> move 0 (-1) state
+
