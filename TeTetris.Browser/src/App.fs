@@ -64,7 +64,13 @@ let init _ = NotStarted, []
 let tetraminos = 
     [
         Palka
+        R
+        S
+        Z
+        J
+        L
         Cube
+        L
         Palka
     ]
 

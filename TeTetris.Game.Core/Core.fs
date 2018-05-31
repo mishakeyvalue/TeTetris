@@ -34,6 +34,61 @@ let initTetramino = function
             d={ startPoint with y = startPoint.y+3 };               
           }       
         }
+    | L ->
+        { shape=L;
+          block={color="yellow"};
+          coords=
+          {
+            a=startPoint;
+            b={ startPoint with x = startPoint.x+1 };
+            c={ startPoint with y = startPoint.y+1 };
+            d={ startPoint with y = startPoint.y+2 };       
+          }
+        }
+    | J ->
+        { shape=L;
+          block={color="yellow"};
+          coords=
+          {
+            a=startPoint;
+            b={ startPoint with x = startPoint.x-1 };
+            c={ startPoint with y = startPoint.y+1 };
+            d={ startPoint with y = startPoint.y+2 };       
+          }
+        }
+    | S ->
+        { shape=L;
+          block={color="yellow"};
+          coords=
+          {
+            a=startPoint;
+            b={ startPoint with x = startPoint.x-1 };
+            c={ startPoint with y = startPoint.y+1 };
+            d={ startPoint with y = startPoint.y+1; x = startPoint.x + 1 };   
+          }
+        }
+    | Z ->
+        { shape=L;
+          block={color="yellow"};
+          coords=
+          {
+            a=startPoint;
+            b={ startPoint with x = startPoint.x+1 };
+            c={ startPoint with y = startPoint.y+1 };
+            d={ startPoint with y = startPoint.y+1; x = startPoint.x - 1 };   
+          }
+        }
+    | R ->
+        { shape=L;
+          block={color="yellow"};
+          coords=
+          {
+            a=startPoint;
+            b={ startPoint with y = startPoint.y+1 };
+            c={ startPoint with y = startPoint.y+1; x = startPoint.x - 1 };   
+            d={ startPoint with y = startPoint.y+1; x = startPoint.x + 1 };   
+          }
+        }
 
 let emptyGrid = [for i in 0 .. WorldWidth do
                    yield  i, [for j in 0 .. WorldHeight + 4 do yield j, None] |> Map.ofList 
@@ -61,9 +116,11 @@ let landTetramino state =
      let addPoint p (blocks: Map<int, Map<int, Block option>>) = blocks.Add(p.x, (blocks.[p.x].Add( p.y, { color="black" } |> Some)))     
      let t = state.activeTetramino.coords
      let landedBlocks = state.blocks |> addPoint t.a |> addPoint t.b |> addPoint t.c |> addPoint t.d
+     let h,hs = deattachHead state.tetraminoQueue
 
      { state with 
-         activeTetramino = state.tetraminoQueue |> Seq.head |> initTetramino
+         tetraminoQueue = hs
+         activeTetramino = h |> initTetramino
          blocks = landedBlocks
      }
 

@@ -11,6 +11,11 @@ type Block = {
 type TetraminoShape =
     | Cube
     | Palka
+    | L
+    | J
+    | S
+    | Z
+    | R
 
 type TetraminoCoords = {
     a: Point
@@ -41,3 +46,4 @@ type GameCommand =
     | MoveRight
     | MoveLeft
     | ShiftDown
+    | Rotate
