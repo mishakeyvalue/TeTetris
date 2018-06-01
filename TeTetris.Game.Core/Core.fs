@@ -90,8 +90,8 @@ let initTetramino = function
           }
         }
 
-let emptyGrid = [for i in 0 .. WorldWidth do
-                   yield  i, [for j in 0 .. WorldHeight + 4 do yield j, None] |> Map.ofList 
+let emptyGrid = [for i in 0 .. WorldHeight + 4 do
+                   yield  i, [for j in 0 .. WorldWidth do yield j, None] |> Map.ofList 
                 ] |> Map.ofList
 
 let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=emptyGrid }
@@ -108,14 +108,23 @@ let moveTetramino xo yo (t: TetraminoCoords) =
     }
 
 let isLandConflict (t: TetraminoCoords) (landed: Map<int, Map<int, Block option>>) = 
-    let isPointConflict p = p.x < 0 || p.x >= WorldWidth || p.y < 0 || landed.[p.x].[p.y] |> Option.isSome
+    let isPointConflict p = p.x < 0 || p.x >= WorldWidth || p.y < 0 || landed.[p.y].[p.x] |> Option.isSome
     isPointConflict t.a || isPointConflict t.b || isPointConflict t.c || isPointConflict t.d
 
+let runClearing (bl: Map<int, Map<int, Block option>>) =
+    let isLineFull _ el = el |> Map.forall (fun _ -> Option.isSome) 
+    let fullLines = bl |> Map.filter isLineFull |> Seq.map (fun kvp -> kvp.Key)
+    printfn "%A" bl.[0]
+    let clearLine (m: Map<int, Map<int, Block option>>) i = 
+        let shift m i = m |> Map.add i m.[i+1]
+        [ i .. WorldHeight] |> List.fold shift m
+    
+    fullLines |> Seq.fold clearLine bl
 
 let landTetramino state = 
-     let addPoint p (blocks: Map<int, Map<int, Block option>>) = blocks.Add(p.x, (blocks.[p.x].Add( p.y, { color="black" } |> Some)))     
+     let addPoint p (blocks: Map<int, Map<int, Block option>>) = blocks.Add(p.y, (blocks.[p.y].Add( p.x, { color="black" } |> Some)))     
      let t = state.activeTetramino.coords
-     let landedBlocks = state.blocks |> addPoint t.a |> addPoint t.b |> addPoint t.c |> addPoint t.d
+     let landedBlocks = state.blocks |> addPoint t.a |> addPoint t.b |> addPoint t.c |> addPoint t.d |> runClearing
      let h,hs = deattachHead state.tetraminoQueue
 
      { state with 

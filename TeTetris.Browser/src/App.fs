@@ -24,7 +24,7 @@ type Msg =
     | DownKeyPressed
 
 // *****************************************************
-let RefreshRate = 512 / 2
+let RefreshRate = 512 / 2 / 2
 
 let mutable interval = 0.
 
@@ -64,14 +64,18 @@ let init _ = NotStarted, []
 let tetraminos = 
     [
         Palka
+        //Palka
+        //Cube
+        //Cube
+        //Cube
         R
         S
         Z
         J
         L
         Cube
-        L
-        Palka
+        //L
+        //Palka
     ]
 
 let initialState = emptyState tetraminos
