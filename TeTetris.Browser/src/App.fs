@@ -24,7 +24,7 @@ type Msg =
     | DownKeyPressed
 
 // *****************************************************
-let RefreshRate = 512 / 2 / 2
+let RefreshRate = 512 / 2 / 2 / 2
 
 let mutable interval = 0.
 
@@ -64,16 +64,16 @@ let init _ = NotStarted, []
 let tetraminos = 
     [
         Palka
-        //Palka
+        Palka
+        ////Cube
+        ////Cube
+        ////Cube
+        //R
+        //S
+        //Z
+        //J
+        //L
         //Cube
-        //Cube
-        //Cube
-        R
-        S
-        Z
-        J
-        L
-        Cube
         //L
         //Palka
     ]
@@ -169,7 +169,7 @@ let root model dispatch =
             | InProgress s ->
                 s.blocks
                 |> Map.toList
-                |> List.collect (fun (k,v) -> v |> Map.toList |> List.map (fun (k',v') -> {x=k; y=k'}, v'))
+                |> List.collect (fun (k,v) -> v |> Map.toList |> List.map (fun (k',v') -> {x=k'; y=k}, v'))
                 |> List.choose (function | (_, None) -> None | (v, Some x) -> Some (v, x))
                 |> List.map point // TODO: move convertion to VM to utils
             | _            -> []

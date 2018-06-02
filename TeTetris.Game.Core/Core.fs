@@ -91,7 +91,7 @@ let initTetramino = function
         }
 
 let emptyGrid = [for i in 0 .. WorldHeight + 4 do
-                   yield  i, [for j in 0 .. WorldWidth do yield j, None] |> Map.ofList 
+                   yield  i, [for j in 0 .. WorldWidth - 1 do yield j, None] |> Map.ofList 
                 ] |> Map.ofList
 
 let emptyState (x::xs) = { tetraminoQueue= Seq.repeat xs; activeTetramino=initTetramino x; blocks=emptyGrid }
@@ -115,11 +115,11 @@ let runClearing (bl: Map<int, Map<int, Block option>>) =
     let isLineFull _ el = el |> Map.forall (fun _ -> Option.isSome) 
     let fullLines = bl |> Map.filter isLineFull |> Seq.map (fun kvp -> kvp.Key)
     printfn "%A" bl.[0]
-    let clearLine (m: Map<int, Map<int, Block option>>) i = 
+    let clearLine (m: Map<int, Map<int, Block option>>, offset) i = 
         let shift m i = m |> Map.add i m.[i+1]
-        [ i .. WorldHeight] |> List.fold shift m
+        [ i - offset .. WorldHeight] |> List.fold shift m, offset + 1
     
-    fullLines |> Seq.fold clearLine bl
+    fullLines |> Seq.fold clearLine (bl, 0) |> fst
 
 let landTetramino state = 
      let addPoint p (blocks: Map<int, Map<int, Block option>>) = blocks.Add(p.y, (blocks.[p.y].Add( p.x, { color="black" } |> Some)))     
