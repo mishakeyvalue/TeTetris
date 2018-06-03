@@ -1,4 +1,4 @@
-﻿namespace TeTetris.Game.Core
+﻿namespace TeTetris.Game
 
 module Matricies = 
     let rec transpose = function
@@ -36,7 +36,7 @@ module Rotation =
         let vr = Matricies.sub vector pivot
         let vt = Matricies.multiply Matricies.rotationMatrix vr
         Matricies.add pivot vt
-    let rotate(c: TetraminoCoords) = 
+    let tryRotate(c: TetraminoCoords) = 
         let pivot = toMatrix c.c
         let rotatePoint = toMatrix >> rotateMatrix pivot >> fromMatrix
         

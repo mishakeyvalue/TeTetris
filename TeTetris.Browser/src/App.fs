@@ -2,18 +2,13 @@ module App.View
 
 open Elmish
 open Elmish.Browser.Navigation
-open Elmish.Browser.UrlParser
-open Fable.Core
 open Fable.Core.JsInterop
-open Fable.Import
 open Fable.Import.Browser
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 
 open TeTetris.Game.Core
 open TeTetris.Game.Types
-open Fable.PowerPack.Keyboard
-open TeTetris.Game.Core
 
 // MODEL
 
@@ -123,11 +118,6 @@ let point (p,bl) =
      []
 
 importAll "../sass/main.sass"
-
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
-open System.Drawing
-
 let root model dispatch =
   let navbar =
     nav

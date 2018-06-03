@@ -84,8 +84,8 @@ let initTetramino = function
           coords=
           {
             a=startPoint;
-            b={ startPoint with y = startPoint.y+1 };
-            c={ startPoint with y = startPoint.y+1; x = startPoint.x - 1 };   
+            b={ startPoint with y = startPoint.y+1; x = startPoint.x - 1 };   
+            c={ startPoint with y = startPoint.y+1 };
             d={ startPoint with y = startPoint.y+1; x = startPoint.x + 1 };   
           }
         }
@@ -107,7 +107,7 @@ let moveTetramino xo yo (t: TetraminoCoords) =
         d = movePoint t.d
     }
 
-let isLandConflict (t: TetraminoCoords) (landed: Map<int, Map<int, Block option>>) = 
+let isLandConflict (landed: Map<int, Map<int, Block option>>) (t: TetraminoCoords) = 
     let isPointConflict p = p.x < 0 || p.x >= WorldWidth || p.y < 0 || landed.[p.y].[p.x] |> Option.isSome
     isPointConflict t.a || isPointConflict t.b || isPointConflict t.c || isPointConflict t.d
 
@@ -135,18 +135,42 @@ let landTetramino state =
 
 let gameTick (state: State)=
     let potentialTetraminoPos = moveTetramino 0 (-1) state.activeTetramino.coords
-    if isLandConflict potentialTetraminoPos state.blocks
+    if isLandConflict state.blocks potentialTetraminoPos
         then landTetramino state
         else {state with activeTetramino = {state.activeTetramino with coords = potentialTetraminoPos }}
 
 let move x y state = 
     let potentialPos = moveTetramino x y state.activeTetramino.coords
-    if isLandConflict potentialPos state.blocks
+    if isLandConflict state.blocks potentialPos
         then state
         else {state with activeTetramino = {state.activeTetramino with coords = potentialPos }}
 
-let rotate state = {state with activeTetramino = {state.activeTetramino with coords = TeTetris.Game.Core.Rotation.rotate state.activeTetramino.coords }}
+open TeTetris.Game.Rotation
 
+let potentialShifts coords =
+    let move' xo yo = 
+        seq {yield moveTetramino xo yo coords; yield moveTetramino (-xo) (-yo) coords}    
+    seq { for shift in 0 .. WorldHeight do
+            yield! move' shift 0    
+            yield! move' shift shift    
+            yield! move' 0 shift    
+            yield! move' -shift shift    
+        }
+
+
+let resolveConflicts (t: TetraminoCoords) (landed: Map<int, Map<int, Block option>>) =     
+    Seq.find (isLandConflict landed >> not) (potentialShifts t)
+let rotate state = 
+    let defaultRotation state =
+
+        let potentialPos = tryRotate state.activeTetramino.coords
+        let newCoords = resolveConflicts potentialPos state.blocks
+        {state with activeTetramino = {state.activeTetramino with coords = newCoords }}
+
+    match state.activeTetramino.shape with
+        | Cube -> state
+        | _ -> defaultRotation state
+    
 let commandHandler command state =    
     match command with
         | Tick -> gameTick state
