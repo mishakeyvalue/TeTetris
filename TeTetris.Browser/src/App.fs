@@ -13,6 +13,7 @@ open Fable.Helpers.React.Props
 open TeTetris.Game.Core
 open TeTetris.Game.Types
 open Fable.PowerPack.Keyboard
+open TeTetris.Game.Core
 
 // MODEL
 
@@ -22,9 +23,10 @@ type Msg =
     | LeftKeyPressed
     | RightKeyPressed
     | DownKeyPressed
+    | UpKeyPressed
 
 // *****************************************************
-let RefreshRate = 512 / 2 / 2 / 2
+let RefreshRate = 512 / 2
 
 let mutable interval = 0.
 
@@ -50,6 +52,7 @@ let onGameKeyDown _ =
             match e with
                 | ev when ev.keyCode = LEFT_KEY -> dispatch (LeftKeyPressed)
                 | ev when ev.keyCode = RIGHT_KEY -> dispatch (RightKeyPressed)
+                | ev when ev.keyCode = UP_KEY -> dispatch (UpKeyPressed)
                 | ev when ev.keyCode = DOWN_KEY -> dispatch (DownKeyPressed)
                 | _ -> ()
             :> obj)
@@ -64,18 +67,14 @@ let init _ = NotStarted, []
 let tetraminos = 
     [
         Palka
+        R
+        S
+        Z
+        J
+        L
+        Cube
+        L
         Palka
-        ////Cube
-        ////Cube
-        ////Cube
-        //R
-        //S
-        //Z
-        //J
-        //L
-        //Cube
-        //L
-        //Palka
     ]
 
 let initialState = emptyState tetraminos
@@ -83,7 +82,7 @@ let initialState = emptyState tetraminos
 let update msg model = 
     match msg with
         | StartGame -> InProgress initialState, Cmd.ofSub tick
-        | Tick -> match model with
+        | Tick -> match model with // TODO: refactor this!!1
             | InProgress state -> InProgress (commandHandler GameCommand.Tick state), []
             | _  -> model, []
 
@@ -93,6 +92,9 @@ let update msg model =
 
          | RightKeyPressed -> match model with
             | InProgress state -> InProgress (commandHandler GameCommand.MoveRight state), []
+            | _  -> model, []
+          | UpKeyPressed -> match model with
+            | InProgress state -> InProgress (commandHandler GameCommand.Rotate state), []
             | _  -> model, []
          | DownKeyPressed -> match model with
             | InProgress state -> InProgress (commandHandler GameCommand.ShiftDown state), []

@@ -145,11 +145,14 @@ let move x y state =
         then state
         else {state with activeTetramino = {state.activeTetramino with coords = potentialPos }}
 
+let rotate state = {state with activeTetramino = {state.activeTetramino with coords = TeTetris.Game.Core.Rotation.rotate state.activeTetramino.coords }}
+
 let commandHandler command state =    
     match command with
         | Tick -> gameTick state
         | MoveLeft  -> move (-1) 0 state
         | MoveRight -> move (+1) 0 state
         | ShiftDown -> move 0 (-1) state        
+        | Rotate -> rotate state
         | _ -> state
 
